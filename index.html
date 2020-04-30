@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html>
+<head>
+	
+	<title>Kerala Hospitalization(Randomly generated dataset)</title>
+
+	<meta charset="utf-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	
+
+  <link rel="stylesheet" href="leaflet/leaflet.css"/>
+ 
+  <script src="leaflet/leaflet.js"></script>   
+
+
+
+	<style>
+		html, body {
+			height: 100%;
+			margin: 0;
+		}
+		.info,.info1,.info2,.info3 {
+		padding: 6px 8px;
+		font: 14px/16px Arial, Helvetica, sans-serif;
+		background: white;
+		background: rgba(255,255,255,0.8);
+		box-shadow: 0 0 15px rgba(0,0,0,0.2);
+		border-radius: 5px;
+		}
+		.info h4, .info1 h4, .info2 h4, .info3 h4 {
+			margin: 0 0 5px;
+			color: #777;
+		}
+		.legend, .legend1, .legend2, .legend3 {
+			line-height: 18px;
+			color: #555;
+		}
+		.legend i, .legend1 i, .legend2 i, .legend3 i {
+			width: 18px;
+			height: 18px;
+			float: left;
+			margin-right: 8px;
+			opacity: 0.7;
+		}
+		#mapid, #mapid1, #mapid2, #mapid3{
+		margin:20px auto;
+		}
+		h1{
+		margin:0px auto;
+		font-family:Arial;
+		text-align:center;
+		}
+	</style>
+	
+</head>
+<body>
+
+
+<h1>Three month average</h1>
+<div id="mapid" style="width: 500px; height: 500px;"></div>
+<h1>One month average</h1>
+<div id="mapid1" style="width: 500px; height: 500px;"></div>
+<h1>One week average</h1>
+<div id="mapid2" style="width: 500px; height: 500px;"></div>
+<h1>Percentage Capacity Occupied</h1>
+<div id="mapid3" style="width: 500px; height: 500px;"></div>
+<script type="text/javascript" src="Keralataluk.js"></script>
+<script>
+
+	var mymap = L.map('mapid',{
+	zoomSnap:0.01
+	}).setView([10.2, 76.2711], 7);
+	
+	
+	mymap.createPane('labels');
+	mymap.getPane('labels').style.zIndex = 650;
+	mymap.getPane('labels').style.pointerEvents = 'none';
+	
+
+	L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoiaHlkcm9nZW43NzciLCJhIjoiY2s5aWd3Nnh3MDJ6YjNtcDVrOTlxbG94ciJ9.ce1EOsEVVLFfCmOU6vEf1A', {
+		maxZoom: 18,
+		minZoom:6,
+		attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
+			'<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+			'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+		id: 'mapbox/light-v9',
+		tileSize: 512,
+		zoomOffset: -1,
+	}).addTo(mymap);
+	
+	
+	var info = L.control();
+
+		info.onAdd = function (mymap) {
+			this._div = L.DomUtil.create('div', 'info'); // create a div with a class "info"
+			this.update();
+			return this._div;
+		};
+
+		// method that we will use to update the control based on feature properties passed
+		info.update = function (props) {
+			this._div.innerHTML = '<h4>Kerala hospitaization paramter</h4>' +  (props ?
+				'<b>' + props.NAME_3 + '</b><br />' + props.exp_param3m + ' units'
+				: 'Hover over a district');
+		};
+
+	
+	function getColor(d) {
+    return d > 1.2 ? '#800026' :
+           d > 1.1  ? '#BD0026' :
+           d > 1.05  ? '#E31A1C' :
+           d > 1.01  ? '#FC4E2A' :
+           d > 1.001   ? '#FD8D3C' :
+           d > 1.0001   ? '#FEB24C' :
+           d > 1   ? '#FED976' :
+                      '#b3ccff';
+	}
+
+	
+	function style(feature) {
+		return {
+			weight: 2,
+			opacity: 1,
+			color: 'white',
+			dashArray: '3',
+			fillOpacity: 0.7,
+			fillColor: getColor(feature.properties.exp_param3m)
+		};
+	}
+	
+	function highlightFeature(e) {
+    var layer = e.target;
+
+    layer.setStyle({
+        weight: 5,
+        color: '#666',
+        dashArray: '',
+        fillOpacity: 0.7
+    });
+
+    if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+        layer.bringToFront();
+    }
+    info.update(layer.feature.properties);
+	}
+	
+	function resetHighlight(e) {
+    geojson.resetStyle(e.target);
+    info.update();
+}
+
+	function zoomToFeature(e) {
+    map.fitBounds(e.target.getBounds());
+}
+
+	function onEachFeature(feature, layer) {
+    layer.on({
+        mouseover: highlightFeature,
+        mouseout: resetHighlight,
+        click: zoomToFeature
+    });
+}
+
+	
+	
+	var geojson=L.geoJson(Kerala_state,{
+		style:style,
+		onEachFeature: onEachFeature
+	}).addTo(mymap);
+	
+	
+
+	info.addTo(mymap);
+
+	
+	
+	var legend = L.control({position: 'bottomright'});
+
+		legend.onAdd = function (mymap) {
+
+			var div = L.DomUtil.create('div', 'info legend'),
+				grades = [0, 1.0, 1.0001, 1.001, 1.01, 1.05, 1.1, 1.2],
+				labels = [];
+
+			// loop through our density intervals and generate a label with a colored square for each interval
+			for (var i = 0; i < grades.length; i++) {
+			
+			from = grades[i];
+			to = grades[i + 1];
+
+			labels.push(
+				'<i style="background:' + getColor(from + 0.0000001) + '"></i> ' +
+				from + (to ? '&ndash;' + to : '+'));
+			}
+			
+			div.innerHTML = labels.join('<br>');
+			return div;
+		};
+
+		legend.addTo(mymap);
+	
+	var mymap1 = L.map('mapid1',{
+	zoomSnap:0.01
+	}).setView([10.2, 76.2711], 7);
+	
+	
+	
+	L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoiaHlkcm9nZW43NzciLCJhIjoiY2s5aWd3Nnh3MDJ6YjNtcDVrOTlxbG94ciJ9.ce1EOsEVVLFfCmOU6vEf1A', {
+		maxZoom: 18,
+		minZoom:6,
+		attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
+			'<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+			'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+		id: 'mapbox/light-v9',
+		tileSize: 512,
+		zoomOffset: -1,
+	}).addTo(mymap1);
+	
+	var info1 = L.control();
+
+		info1.onAdd = function (mymap1) {
+			this._div = L.DomUtil.create('div', 'info1'); // create a div with a class "info"
+			this.update();
+			return this._div;
+		};
+
+		// method that we will use to update the control based on feature properties passed
+		info1.update = function (props) {
+			this._div.innerHTML = '<h4>Kerala hospitaization paramter</h4>' +  (props ?
+				'<b>' + props.NAME_3 + '</b><br />' + props.exp_param1m + ' units'
+				: 'Hover over a district');
+		};
+	
+    
+	function getColor1(d) {
+    return d > 1.5 ? '#800026' :
+           d > 1.4  ? '#BD0026' :
+           d > 1.3  ? '#E31A1C' :
+           d > 1.2  ? '#FC4E2A' :
+           d > 1.15   ? '#FD8D3C' :
+           d > 1.10   ? '#FEB24C' :
+           d > 1   ? '#FED976' :
+		   d > 0.95  ?  '#b3ccff':
+                      '#003cb3';
+	}
+
+	
+	function style1(feature) {
+		return {
+			weight: 2,
+			opacity: 1,
+			color: 'white',
+			dashArray: '3',
+			fillOpacity: 0.7,
+			fillColor: getColor1(feature.properties.exp_param1m)
+		};
+	}
+		
+		
+		
+	function highlightFeature1(e) {
+    var layer = e.target;
+
+    layer.setStyle({
+        weight: 5,
+        color: '#666',
+        dashArray: '',
+        fillOpacity: 0.7
+    });
+
+    if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+        layer.bringToFront();
+    }
+    info1.update(layer.feature.properties);
+	}
+	
+	function resetHighlight1(e) {
+    geojson1.resetStyle(e.target);
+    info1.update();
+}
+
+	function zoomToFeature1(e) {
+    map.fitBounds(e.target.getBounds());
+}
+
+	function onEachFeature1(feature, layer) {
+    layer.on({
+        mouseover: highlightFeature1,
+        mouseout: resetHighlight1,
+        click: zoomToFeature1
+    });
+}
+
+	
+	
+
+	var geojson1=L.geoJson(Kerala_state,{
+		style:style1,
+		onEachFeature: onEachFeature1
+	}).addTo(mymap1);
+	
+	info1.addTo(mymap1);
+	
+	
+	var legend1 = L.control({position: 'bottomright'});
+
+		legend1.onAdd = function (mymap1) {
+
+			var div = L.DomUtil.create('div', 'info legend'),
+				grades = [0,0.95, 1.0, 1.10, 1.15, 1.20, 1.3, 1.4, 1.5],
+				labels = [];
+
+			// loop through our density intervals and generate a label with a colored square for each interval
+			for (var i = 0; i < grades.length; i++) {
+			
+			from = grades[i];
+			to = grades[i + 1];
+
+			labels.push(
+				'<i style="background:' + getColor1(from + 0.001) + '"></i> ' +
+				from + (to ? '&ndash;' + to : '+'));
+			}
+			
+			div.innerHTML = labels.join('<br>');
+			return div;
+		};
+
+		legend1.addTo(mymap1);
+
+
+	
+	var mymap2 = L.map('mapid2',{
+	zoomSnap:0.01
+	}).setView([10.2, 76.2711], 7);
+	
+	L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoiaHlkcm9nZW43NzciLCJhIjoiY2s5aWd3Nnh3MDJ6YjNtcDVrOTlxbG94ciJ9.ce1EOsEVVLFfCmOU6vEf1A', {
+		maxZoom: 18,
+		minZoom:6,
+		attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
+			'<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+			'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+		id: 'mapbox/light-v9',
+		tileSize: 512,
+		zoomOffset: -1,
+	}).addTo(mymap2);
+	
+	var info2 = L.control();
+
+		info2.onAdd = function (mymap2) {
+			this._div = L.DomUtil.create('div', 'info2'); // create a div with a class "info"
+			this.update();
+			return this._div;
+		};
+
+		// method that we will use to update the control based on feature properties passed
+		info2.update = function (props) {
+			this._div.innerHTML = '<h4>Kerala hospitaization paramter</h4>' +  (props ?
+				'<b>' + props.NAME_3 + '</b><br />' + props.exp_param1w + ' units'
+				: 'Hover over a district');
+		};
+		
+	
+	function getColor2(d) {
+    return d > 5 ? '#800026' :
+           d > 4  ? '#BD0026' :
+           d > 3  ? '#E31A1C' :
+           d > 2  ? '#FC4E2A' :
+           d > 1.15   ? '#FD8D3C' :
+           d > 1.06   ? '#FEB24C' :
+           d > 1   ? '#FED976' :
+		   d > 0.99  ?  '#b3ccff':
+		   d > 0.95  ? '#6699ff':
+		   d > 0.90  ?  '#0055ff':
+		   d > 0.5  ?  '#003cb3':
+                      '#000000';
+	}
+
+	
+	function style2(feature) {
+		return {
+			weight: 2,
+			opacity: 1,
+			color: 'white',
+			dashArray: '3',
+			fillOpacity: 0.7,
+			fillColor: getColor2(feature.properties.exp_param1w)
+		};
+	}
+		
+		
+	function highlightFeature2(e) {
+    var layer = e.target;
+
+    layer.setStyle({
+        weight: 5,
+        color: '#666',
+        dashArray: '',
+        fillOpacity: 0.7
+    });
+
+    if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+        layer.bringToFront();
+    }
+    info2.update(layer.feature.properties);
+	}
+	
+	function resetHighlight2(e) {
+    geojson2.resetStyle(e.target);
+    info2.update();
+}
+
+	function zoomToFeature2(e) {
+    map.fitBounds(e.target.getBounds());
+}
+
+	function onEachFeature2(feature, layer) {
+    layer.on({
+        mouseover: highlightFeature2,
+        mouseout: resetHighlight2,
+        click: zoomToFeature2
+    });
+}
+
+	
+	
+
+	var geojson2=L.geoJson(Kerala_state,{
+		style:style2,
+		onEachFeature: onEachFeature2
+	}).addTo(mymap2);
+	
+	info1.addTo(mymap2);
+	
+	
+	var legend2 = L.control({position: 'bottomright'});
+
+		legend2.onAdd = function (mymap2) {
+
+			var div = L.DomUtil.create('div', 'info legend'),
+				grades = [0, 0.5,0.8,0.9,0.95, 1.0, 1.06, 1.15, 2, 3, 4, 5],
+				labels = [];
+
+			// loop through our density intervals and generate a label with a colored square for each interval
+			for (var i = 0; i < grades.length; i++) {
+			
+			from = grades[i];
+			to = grades[i + 1];
+
+			labels.push(
+				'<i style="background:' + getColor2(from + 0.01) + '"></i> ' +
+				from + (to ? '&ndash;' + to : '+'));
+			}
+			
+			div.innerHTML = labels.join('<br>');
+			return div;
+		};
+
+		legend2.addTo(mymap2);
+	
+	
+	var mymap3 = L.map('mapid3',{
+	zoomSnap:0.01
+	}).setView([10.2, 76.2711], 7);
+	
+	L.tileLayer('https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoiaHlkcm9nZW43NzciLCJhIjoiY2s5aWd3Nnh3MDJ6YjNtcDVrOTlxbG94ciJ9.ce1EOsEVVLFfCmOU6vEf1A', {
+		maxZoom: 18,
+		minZoom:6,
+		attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
+			'<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+			'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+		id: 'mapbox/light-v9',
+		tileSize: 512,
+		zoomOffset: -1,
+	}).addTo(mymap3);
+	
+	var info3 = L.control();
+
+		info3.onAdd = function (mymap3) {
+			this._div = L.DomUtil.create('div', 'info3'); // create a div with a class "info"
+			this.update();
+			return this._div;
+		};
+
+		// method that we will use to update the control based on feature properties passed
+		info3.update = function (props) {
+			this._div.innerHTML = '<h4>Kerala hospitaization paramter</h4>' +  (props ?
+				'<b>' + props.NAME_3 + '</b><br />' + props.curr_occ + ' percentage'
+				: 'Hover over a district');
+		};
+		
+	
+	function getColor3(d) {
+    return d > 98 ? '#800026' :
+           d > 95  ? '#BD0026' :
+           d > 90  ? '#E31A1C' :
+           d > 85  ? '#FC4E2A' :
+           d > 80   ? '#FD8D3C' :
+           d > 70   ? '#FEB24C' :
+           d > 50   ? '#FED976' :
+		   d > 40  ?  '#b3ccff':
+		   d > 30  ? '#6699ff':
+		   d > 20  ?  '#0055ff':
+		   d > 10  ?  '#003cb3':
+                      '#000000';
+	}
+
+	
+	function style3(feature) {
+		return {
+			weight: 2,
+			opacity: 1,
+			color: 'white',
+			dashArray: '3',
+			fillOpacity: 0.7,
+			fillColor: getColor3(feature.properties.curr_occ)
+		};
+	}
+			
+		
+	function highlightFeature3(e) {
+    var layer = e.target;
+
+    layer.setStyle({
+        weight: 5,
+        color: '#666',
+        dashArray: '',
+        fillOpacity: 0.7
+    });
+
+    if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+        layer.bringToFront();
+    }
+    info3.update(layer.feature.properties);
+	}
+	
+	function resetHighlight3(e) {
+    geojson3.resetStyle(e.target);
+    info3.update();
+}
+
+	function zoomToFeature3(e) {
+    map.fitBounds(e.target.getBounds());
+}
+
+	function onEachFeature3(feature, layer) {
+    layer.on({
+        mouseover: highlightFeature3,
+        mouseout: resetHighlight3,
+        click: zoomToFeature3
+    });
+}
+
+	
+	
+
+	var geojson3=L.geoJson(Kerala_state,{
+		style:style3,
+		onEachFeature: onEachFeature3
+	}).addTo(mymap3);
+	
+	info1.addTo(mymap3);
+	
+	
+	var legend3 = L.control({position: 'bottomright'});
+
+		legend3.onAdd = function (mymap3) {
+
+			var div = L.DomUtil.create('div', 'info legend'),
+				grades = [0, 10,20,30,40, 50, 70, 80, 85, 90, 95, 98],
+				labels = [];
+
+			// loop through our density intervals and generate a label with a colored square for each interval
+			for (var i = 0; i < grades.length; i++) {
+			
+			from = grades[i];
+			to = grades[i + 1];
+
+			labels.push(
+				'<i style="background:' + getColor3(from + 1) + '"></i> ' +
+				from + (to ? '&ndash;' + to : '+'));
+			}
+			
+			div.innerHTML = labels.join('<br>');
+			return div;
+		};
+
+		legend3.addTo(mymap3);
+	
+</script>
+
+
+
+</body>
+</html>
