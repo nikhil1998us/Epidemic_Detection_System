@@ -17,6 +17,9 @@ Notes on the code:
 
 Data_organisation_hospital_side.ipynb runs based on current computer date. So I recommend you to set the date correctly and provide end date as your computer date+1 day as the last day is not generated in view of effects from incomplete data if the code is deployed in a hospital.
 
+The last script modifies Keralataluk.js file so that the parameters are displayed when index.html is opened. Make sure the folder leaflet is also downloaded when you run the program as it contains an important plugin required for the map to work.
+
+
 I would also like to thank the creaters of the plugin Leaflet, Mapbox and OpenStreetMap whose data and plugins were of great help in this project.
 I am also deeply thankful for the work of Sajjad Anwar in making geojson maps of India which were of great use in this project.
 
