@@ -1,7 +1,7 @@
 # Epidemic_Detection_System 
 This project aims to collect data from local hospitals like number of patients admitted per day. It the aims to find breakout of infectious diseases in different locations using the data on hospitalizations.
 
-The ipynb files can be run on Anaconda. You can also copy the code and run it in a .py file. Either way make sure you ahve the following libraries installed.
+The ipynb files can be run on Anaconda. You can also copy the code and run it in a .py file. Either way make sure you have the following libraries installed.
 1)numpy
 2)urllib
 
